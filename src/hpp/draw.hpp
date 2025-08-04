@@ -2,7 +2,6 @@
 #define DRAW
 
 #include <windows.h>
-#include <iostream>
 #include <vector>
 #include <string>
 #include <thread>
@@ -22,14 +21,17 @@ public:
 
 class Draw {
 public:
-    Draw(int count = 50): hdc(GetDC(NULL)), stopThread(false), ratCount(count) {};
-    void CreateDrawSpace();
-    void AnimateText(HWND hwnd, HDC hdcMem, HBITMAP hBitmap, void* pixels, int width, int height);
+    Draw(int count = 50);
+    ~Draw();
 private:
     HDC hdc;
     int ratCount;
     bool stopThread;
+    std::thread windowThread;
     std::thread contentThread;
+
+    void CreateDrawSpace();
+    void AnimateText(HWND hwnd, HDC hdcMem, HBITMAP hBitmap, void* pixels, int width, int height);
 };
 
 #endif

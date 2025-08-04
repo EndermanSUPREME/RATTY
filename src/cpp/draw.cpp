@@ -28,6 +28,20 @@ bool RatArt::isOffScreen(int width) const {
     return (x - 20) >= width;
 }
 
+Draw::Draw(int count): hdc(GetDC(NULL)), stopThread(false), ratCount(count) {
+    windowThread = std::thread(&Draw::CreateDrawSpace, this);
+}
+
+Draw::~Draw() {
+    // ensure proper thread join on dtor
+    if (contentThread.joinable()) {
+        contentThread.join();
+    }
+    if (windowThread.joinable()) {
+        windowThread.join();
+    }
+}
+
 // Window procedure
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {

@@ -1,0 +1,4 @@
+#pragma once
+// define arguments defined when using make
+#define LHOST @LHOST@
+#define LPORT @LPORT@

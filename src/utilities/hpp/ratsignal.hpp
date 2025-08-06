@@ -18,12 +18,14 @@ public:
     // takes in string content and type and defines elements of the frame
     RatPacket(std::string content, MsgType msgType);
     // extracts elements from given frame after checking if its valid
-    RatPacket(const char* frame);
+    RatPacket(const std::string frame);
 
     // converts the class members into a custom immutable data-frame
     std::string Frame() const;
     // check for valid format
     bool Validate(const std::string& frame) const;
+    // print packet data to stdout
+    void VisualizePacket();
 
     // getters
     unsigned int Length() const;
@@ -38,6 +40,12 @@ private:
     unsigned int size;
     MsgType type;
     std::string msg;
+};
+
+namespace RatPacketUtils {
+    std::string ToHex(const std::string& input);
+    std::string FromHex(const std::string& hex);
+    std::string FormatHex(const std::string& input);
 };
 
 #endif

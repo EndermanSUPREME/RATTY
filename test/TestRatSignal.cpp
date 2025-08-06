@@ -1,18 +1,23 @@
 #include <ratsignal.hpp>
 
 bool TestPacketCreation() {
-    const char* testFrame = "\xde\xad\x7c\x33\x31\x33\x37\x7c\x33\x30\x7c\x34\x38\x36\x35\x36\x43\x36\x43\x36\x46\x32\x30\x36\x36\x37\x32\x36\x46\x36\x44\x32\x30\x36\x33\x36\x43\x36\x39\x36\x35\x36\x45\x37\x34\x7c\xbe\xef";
-    RatPacket testPacket(testFrame);
+    // create packet obj
+    RatPacket packet("This is a test!", MsgType::NONE);
+    
+    // convert packet frame string into packet obj
+    RatPacket testPacket(packet.Frame());
 
-    bool correctSize = testPacket.Length() == 17;
-    bool correctType = testPacket.GetType() == MsgType::EXEC;
-    bool correctMsg = testPacket.GetMessage() == "Hello from client";
+    bool correctSize = testPacket.Length() == packet.Length();
+    bool correctType = testPacket.GetType() == packet.GetType();
+    bool correctMsg = testPacket.GetPacketMessage() == packet.GetPacketMessage();
 
     if (!(correctSize && correctType && correctMsg)) {
         std::cerr << std::boolalpha << "RESULTS: " << 
             correctSize << " && " << correctType << " && " << correctMsg
             << std::endl;
     }
+
+    testPacket.VisualizePacket();
 
     return correctSize && correctType && correctMsg;
 }

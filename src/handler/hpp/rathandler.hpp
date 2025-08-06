@@ -2,13 +2,12 @@
 #define RAT_HANDLER
 
 #include <CLI11.hpp>
+#include <ratsignal.hpp>
+
 #include <iostream>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <utility>
 #include <algorithm>
 #include <random>
-#include <ratsignal.hpp>
 
 class Handler {
 public:

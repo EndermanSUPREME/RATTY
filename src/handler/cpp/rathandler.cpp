@@ -1,7 +1,5 @@
 #include <rathandler.hpp>
 
-const int behaviour = 0;
-
 Handler::Handler(std::string lhost, int lport): LHOST(lhost), LPORT(lport) {
     rat_conn = INVALID_SOCKET;
     InitializeServer();
@@ -139,7 +137,7 @@ bool Handler::Challenge() {
     std::cout << "[*] Initiating Challenge. . ." << std::endl;
 
     char buffer[1024] = {0};
-    int bytesReceived = recv(rat_conn, buffer, sizeof(buffer), behaviour);
+    int bytesReceived = recv(rat_conn, buffer, sizeof(buffer), 0);
 
     if (bytesReceived > 0) {
         std::cout << "[*] Recv Init Packet. . ." << std::endl;
@@ -154,12 +152,12 @@ bool Handler::Challenge() {
             // send challenge
             std::string code = GenerateChallenge();
             RatPacket challPacket(code, MsgType::INIT);
-            send(rat_conn, challPacket.Frame().c_str(), challPacket.SizeOf(), behaviour);
+            send(rat_conn, challPacket.Frame().c_str(), challPacket.SizeOf(), 0);
 
             // recv challenge reply
             std::cout << "[*] Viewing Challenge Reply. . ." << std::endl;
             char buffer[1024] = {0};
-            bytesReceived = recv(rat_conn, buffer, sizeof(buffer), behaviour);
+            bytesReceived = recv(rat_conn, buffer, sizeof(buffer), 0);
 
             if (bytesReceived > 0) {
                 std::cerr << "[*] Reply Code: " << std::string(buffer, bytesReceived) << std::endl;
@@ -169,7 +167,7 @@ bool Handler::Challenge() {
                     // notify rat were established
                     std::cout << "[+] Established RAT Connection!" << std::endl;
                     RatPacket ackPacket("ratty", MsgType::INIT);
-                    send(rat_conn, ackPacket.Frame().c_str(), ackPacket.SizeOf(), behaviour);
+                    send(rat_conn, ackPacket.Frame().c_str(), ackPacket.SizeOf(), 0);
                     return true;
                 }
 
@@ -190,10 +188,10 @@ void Handler::SendPacket(const std::string& data, const MsgType& type) {
     RatPacket packet(data, type);
 
     // send packet frame
-    send(rat_conn, packet.Frame().c_str(), packet.SizeOf(), behaviour);
+    send(rat_conn, packet.Frame().c_str(), packet.SizeOf(), 0);
 
     char buffer[1024] = {0};
-    int bytesReceived = recv(rat_conn, buffer, sizeof(buffer), behaviour);
+    int bytesReceived = recv(rat_conn, buffer, sizeof(buffer), 0);
     if (bytesReceived > 0) {
         std::cout << "Server response: " << std::string(buffer, bytesReceived) << "\n";
     }

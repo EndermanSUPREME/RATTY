@@ -38,7 +38,7 @@ std::string RatPacketUtils::FormatHex(const std::string& input) {
 }
 
 bool RatPacketUtils::Send(SOCKET& sock, const RatPacket& packet) {
-    if (sock == INVALID_SOCKET) {
+    if (sock != INVALID_SOCKET) {
         try {
             int totalBytesSend = 0;
             int bytesSent = 0;
@@ -46,7 +46,7 @@ bool RatPacketUtils::Send(SOCKET& sock, const RatPacket& packet) {
             while (totalBytesSend < packet.SizeOf()) {
                 // save temp string value from Frame() to safely use c_str*
                 std::string data = packet.Frame();
-                bytesSent = send(sock, data.c_str(), packet.SizeOf(), behaviour);
+                bytesSent = send(sock, data.c_str(), packet.SizeOf(), 0);
                 totalBytesSend += bytesSent;
             }
 
@@ -173,7 +173,8 @@ void RatPacket::VisualizePacket() {
 
 // gets size of packet frame for socket sending
 int RatPacket::SizeOf() const {
-    return static_cast<int>(strlen(Frame().c_str()));
+    std::string data = Frame();
+    return static_cast<int>(strlen(data.c_str()));
 }
 // get length of msg string
 unsigned int RatPacket::Length() const {

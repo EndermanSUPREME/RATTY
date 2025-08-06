@@ -37,8 +37,19 @@ std::string RatPacketUtils::FormatHex(const std::string& input) {
     return oss.str();
 }
 
-bool RatPacketUtils::Send(SOCKET& sock, const RatPacket& packet) {
+bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
     if (sock != INVALID_SOCKET) {
+        // send frame size so recv-end can prepare
+        try {
+            std::string data = std::to_string(packet.SizeOf());
+            send(sock, data.c_str(), static_cast<int>(data.size()), 0);
+        } catch (const std::exception& e) {
+            std::cerr << "[-] Error sending expected size!" << std::endl;
+            std::cerr << "[-] " << e.what() << std::endl;
+            return false;
+        }
+
+        // send frame
         try {
             int totalBytesSend = 0;
             int bytesSent = 0;
@@ -52,17 +63,63 @@ bool RatPacketUtils::Send(SOCKET& sock, const RatPacket& packet) {
 
             return true;
         } catch (const std::exception& e) {
+            std::cerr << "[-] Error sending packet data!" << std::endl;
             std::cerr << "[-] " << e.what() << std::endl;
             return false;
         }
-    } else {
-        std::cerr << "[-] Socket is not Valid!" << std::endl;
     }
+
+    std::cerr << "[-] Socket is not Valid!" << std::endl;
     return false;
+}
+
+std::pair<RatPacket,bool> RatPacketUtils::Recv(const SOCKET& sock) {
+    if (sock != INVALID_SOCKET) {
+        int expectedSize = -1;
+
+        // recv expected frame size
+        try {
+            // very large numbers are not expected
+            char buffer[16] = {0};
+            int bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
+            if (bytesReceived > 0) {
+                std::string sizeStr = std::string(buffer, bytesReceived);
+                expectedSize = std::stoi(sizeStr);
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[-] Error recieving expected data length!" << std::endl;
+            std::cerr << "[-] " << e.what() << std::endl;
+            return std::make_pair(RatPacket(), false);
+        }
+
+        // recv frame data
+        if (expectedSize >= 0) {
+            try {
+                const int buffSize = expectedSize;
+                char buffer[buffSize] = {0};
+                int bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
+                if (bytesReceived > 0) {
+                    std::string data = std::string(buffer, bytesReceived);
+                    return std::make_pair(RatPacket(data), true);
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[-] Error recieving packet data!" << std::endl;
+                std::cerr << "[-] " << e.what() << std::endl;
+                return std::make_pair(RatPacket(), false);
+            }
+        } else {
+            std::cerr << "[-] Expected incoming data length unknown!" << std::endl;
+            return std::make_pair(RatPacket(), false);
+        }
+    }
+    
+    return std::make_pair(RatPacket(), false);
 }
 
 //########################################################################################
 //########################################################################################
+
+RatPacket::RatPacket(): msg(""), type(MsgType::NONE), size(0) {}
 
 RatPacket::RatPacket(std::string content, MsgType msgType): msg(content), type(msgType) {
     size = (unsigned int)content.size();

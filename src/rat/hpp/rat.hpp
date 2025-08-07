@@ -3,8 +3,7 @@
 
 #include <config.h> // links to config.h.in
 #include <ratsignal.hpp>
-
-#include <windows.h>
+#include <prochandler.hpp>
 
 #include <iostream>
 #include <string>

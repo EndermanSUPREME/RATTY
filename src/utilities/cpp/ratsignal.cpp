@@ -43,7 +43,12 @@ bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
         try {
             std::string data = std::to_string(packet.SizeOf());
             std::cerr << "|__ send_size: " << data << std::endl;
-            send(sock, data.c_str(), static_cast<int>(data.size()), 0);
+            int bytesSent = send(sock, data.c_str(), static_cast<int>(data.size()), 0);
+
+            if (bytesSent == SOCKET_ERROR || bytesSent <= 0) {
+                std::cerr << "[-] Error occurred when sending." << std::endl;
+                return false;
+            }
         } catch (const std::exception& e) {
             std::cerr << "[-] Error sending expected size!" << std::endl;
             std::cerr << "[-] " << e.what() << std::endl;
@@ -60,6 +65,12 @@ bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
                 std::string data = packet.Frame();
                 std::cerr << "|__ send_data: " << FormatHex(data) << std::endl;
                 bytesSent = send(sock, data.c_str(), packet.SizeOf(), 0);
+
+                if (bytesSent == SOCKET_ERROR || bytesSent <= 0) {
+                    std::cerr << "[-] Error occurred when sending." << std::endl;
+                    return false;
+                }
+
                 totalBytesSend += bytesSent;
             }
 

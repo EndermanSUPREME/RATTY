@@ -152,7 +152,7 @@ void Handler::Interact() {
         std::cin >> input;
         ProcessCommand(input);
         if (activeModule != nullptr) {
-            activeModule->execute();
+            activeModule->execute(rat_conn);
             activeModule = nullptr;
         }
     }

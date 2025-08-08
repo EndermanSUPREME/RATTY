@@ -149,17 +149,21 @@ void Handler::Interact() {
     std::string input;
     while (input != "exit") {
         printf("RATTY >$ ");
-        std::cin >> input;
-        ProcessCommand(input);
-        if (activeModule != nullptr) {
-            activeModule->execute(rat_conn);
-            activeModule = nullptr;
+        std::getline(std::cin, input);
+        
+        if (!input.empty()) {
+            ProcessCommand(input);
+
+            if (activeModule != nullptr) {
+                activeModule->execute(rat_conn);
+                activeModule = nullptr;
+            }
         }
     }
 }
 
 void Handler::ProcessCommand(const std::string& input) {
-    if (input == "exit") return;
+    if (input.empty() || input == "exit") return;
 
     if (input == "shell") {
         // enter interactive powershell session

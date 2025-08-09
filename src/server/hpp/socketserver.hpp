@@ -13,6 +13,7 @@
 
 #ifdef _WIN32
     #include <winsock2.h>
+    #include <ws2tcpip.h>
 
     // typedef alias to link multiple types together
     typedef SOCKET SocketHandle; // WinSocks are type SOCKETS

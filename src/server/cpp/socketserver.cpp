@@ -32,7 +32,7 @@ bool Server::InitializeServer() {
 
     sockaddr_in address;
     int addrlen = sizeof(address);
-    const int PORT = lport;
+    const int PORT = LPORT;
 
     // Initialize Winsock
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -50,7 +50,7 @@ bool Server::InitializeServer() {
 
     // Bind
     address.sin_family = AF_INET;
-    inet_pton(AF_INET, lhost.c_str(), &address.sin_addr);
+    inet_pton(AF_INET, LHOST.c_str(), &address.sin_addr);
     address.sin_port = htons(PORT);
 
     if (bind(sock_server, (sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {

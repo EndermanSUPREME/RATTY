@@ -34,7 +34,6 @@ void ShellModule::execute(const SOCKET& sock) {
                 break;
             }
         }
-        std::cerr << "- input: " << input << std::endl;
     }
     // kill powershell background process
     std::cout << "[*] Closing Shell Module. . ." << std::endl;

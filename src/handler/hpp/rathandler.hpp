@@ -30,7 +30,7 @@ private:
     void ProcessCommand(const std::string& input);
 
     std::string LHOST;
-    SOCKET rat_conn;
+    SocketHandle* rat_conn_ptr;
     Module* activeModule;
     int LPORT;
 };

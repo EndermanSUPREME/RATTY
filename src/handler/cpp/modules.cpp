@@ -8,8 +8,8 @@ ShellModule& ShellModule::getInstance() {
     return instance;
 }
 
-void ShellModule::execute(const SOCKET& sock) {
-    if (sock == INVALID_SOCKET) {
+void ShellModule::execute(const SocketHandle& sock) {
+    if (sock == INVALID_SOCKET_HANDLE) {
         std::cerr << "[-] Module Socket target is not Valid!" << "\n";
         return;
     }

@@ -38,22 +38,22 @@ std::string RatPacketUtils::FormatHex(const std::string& input) {
 }
 
 // check if data sent has been acknowledged
-bool RatPacketUtils::Ack(const SOCKET& sock) {
+bool RatPacketUtils::Ack(const SocketHandle& sock) {
     char buffer[16] = {0};
     int bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
     return (bytesReceived > 0);
 }
 
 // after recv'ing data send an ack signal
-bool RatPacketUtils::SendAck(const SOCKET& sock) {
+bool RatPacketUtils::SendAck(const SocketHandle& sock) {
     const char* ackMsg = "ack";
     int bytesSent = send(sock, ackMsg, static_cast<int>(std::strlen(ackMsg)), 0);
     return (bytesSent > 0);
 }
 
 // send a packet to a socket target and return whether or not the send was successful
-bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
-    if (sock != INVALID_SOCKET) {
+bool RatPacketUtils::Send(const SocketHandle& sock, const RatPacket& packet) {
+    if (sock != INVALID_SOCKET_HANDLE) {
         // send frame size so recv-end can prepare
         try {
             std::string data = std::to_string(packet.SizeOf());
@@ -61,7 +61,7 @@ bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
             // we should ack every send
             int bytesSent = send(sock, data.c_str(), static_cast<int>(data.size()), 0);
 
-            if (bytesSent == SOCKET_ERROR || bytesSent <= 0) {
+            if (bytesSent <= 0) {
                 std::cerr << "[-] Error occurred when sending." << std::endl;
                 return false;
             }
@@ -88,7 +88,7 @@ bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
                 std::string data = packet.Frame();
                 bytesSent = send(sock, data.c_str(), packet.SizeOf(), 0);
 
-                if (bytesSent == SOCKET_ERROR || bytesSent <= 0) {
+                if (bytesSent <= 0) {
                     std::cerr << "[-] Error occurred when sending." << std::endl;
                     return false;
                 }
@@ -109,8 +109,8 @@ bool RatPacketUtils::Send(const SOCKET& sock, const RatPacket& packet) {
 }
 
 // recieve a rat-packet | bool pair where the bool represents whether or not a packet was recieved
-std::pair<RatPacket,bool> RatPacketUtils::Recv(const SOCKET& sock) {
-    if (sock != INVALID_SOCKET) {
+std::pair<RatPacket,bool> RatPacketUtils::Recv(const SocketHandle& sock) {
+    if (sock != INVALID_SOCKET_HANDLE) {
         int expectedSize = -1;
 
         // recv expected frame size

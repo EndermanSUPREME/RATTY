@@ -9,7 +9,7 @@
 class Module {
 public:
     Module();
-    virtual void execute(const SOCKET& sock) =0;
+    virtual void execute(const SocketHandle& sock) =0;
 };
 
 // derived singleton class
@@ -17,7 +17,7 @@ class ShellModule : public Module {
 public:
     // thread safe singleton
     static ShellModule& getInstance();
-    void execute(const SOCKET& sock);
+    void execute(const SocketHandle& sock);
 private:
     ShellModule();
     ShellModule(const ShellModule&) = delete;

